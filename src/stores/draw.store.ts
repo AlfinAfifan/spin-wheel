@@ -7,8 +7,12 @@ import { uid } from '@/lib/utils';
 
 export type ModalName = 'import' | 'participants' | 'history' | 'settings' | 'wheel' | null;
 
-/** Maximum number of names shown on the wheel (and eligible to win in one spin). */
-export const MAX_WHEEL = 16;
+/**
+ * Number of names the circular wheel can display comfortably. The roster itself has no limit:
+ * in "auto" stage mode, rosters larger than this are shown with the vertical reel instead.
+ * Also used as the sample size for the "Acak" (random fill) actions.
+ */
+export const WHEEL_CAPACITY = 16;
 
 export interface WheelFilter {
   department: string;
@@ -26,6 +30,7 @@ export const DEFAULT_SETTINGS: DrawSettings = {
   confettiEnabled: true,
   theme: 'dark',
   fallbackPrizeName: 'Door Prize',
+  stageMode: 'auto',
 };
 
 export function defaultPrizes(): Prize[] {
@@ -168,11 +173,10 @@ export const useDrawStore = create<DrawState>()(
       },
       clearParticipants: () => set({ participants: [], winners: [], revealSpinId: null, wheelIds: [], ...touch() }),
 
-      setWheelIds: (ids) => set({ wheelIds: Array.from(new Set(ids)).slice(0, MAX_WHEEL), ...touch() }),
+      setWheelIds: (ids) => set({ wheelIds: Array.from(new Set(ids)), ...touch() }),
       toggleWheelId: (id) =>
         set((s) => {
           if (s.wheelIds.includes(id)) return { wheelIds: s.wheelIds.filter((x) => x !== id), ...touch() };
-          if (s.wheelIds.length >= MAX_WHEEL) return {};
           return { wheelIds: [...s.wheelIds, id], ...touch() };
         }),
       setWheelFilter: (f) => set((s) => ({ wheelFilter: { ...s.wheelFilter, ...f }, ...touch() })),
@@ -181,7 +185,7 @@ export const useDrawStore = create<DrawState>()(
         if (s.isSpinning) return;
         const scope = selectFilteredPool(s, s.wheelFilter);
         const source = scope.length > 0 ? scope : selectPool(s);
-        set({ wheelIds: pickMany(source, MAX_WHEEL).map((p) => p.id), ...touch() });
+        set({ wheelIds: pickMany(source, WHEEL_CAPACITY).map((p) => p.id), ...touch() });
       },
       clearWheel: () => set({ wheelIds: [], ...touch() }),
 

@@ -1,86 +1,69 @@
-import { useEffect, useMemo, useState } from 'react'
-import { CheckSquare, ListChecks, Search, Shuffle, Square, Trash2, X } from 'lucide-react'
-import {
-  EMPTY_WHEEL_FILTER,
-  MAX_WHEEL,
-  selectFilteredPool,
-  selectPool,
-  selectWheelParticipants,
-  useDrawStore,
-} from '@/stores/draw.store'
-import type { Participant } from '@/types/participant'
-import { pickMany } from '@/lib/random'
-import { Modal } from '@/components/ui/Modal'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
-import { Input, Select } from '@/components/ui/Field'
-import { cn, formatNumber } from '@/lib/utils'
+import { useEffect, useMemo, useState } from 'react';
+import { CheckSquare, ListChecks, Search, Shuffle, Square, Trash2, X } from 'lucide-react';
+import { EMPTY_WHEEL_FILTER, WHEEL_CAPACITY, selectFilteredPool, selectPool, selectWheelParticipants, useDrawStore } from '@/stores/draw.store';
+import type { Participant } from '@/types/participant';
+import { pickMany } from '@/lib/random';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Input, Select } from '@/components/ui/Field';
+import { cn, formatNumber } from '@/lib/utils';
 
-const PAGE_SIZE = 60
+const PAGE_SIZE = 60;
 
 function uniqueValues(list: Participant[], key: keyof Participant): string[] {
-  const set = new Set<string>()
+  const set = new Set<string>();
   for (const p of list) {
-    const v = p[key]
-    if (typeof v === 'string' && v) set.add(v)
+    const v = p[key];
+    if (typeof v === 'string' && v) set.add(v);
   }
-  return Array.from(set).sort((a, b) => a.localeCompare(b))
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
 }
 
 export function WheelModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const participants = useDrawStore((s) => s.participants)
-  const winners = useDrawStore((s) => s.winners)
-  const settings = useDrawStore((s) => s.settings)
-  const wheelIds = useDrawStore((s) => s.wheelIds)
-  const wheelFilter = useDrawStore((s) => s.wheelFilter)
-  const setWheelIds = useDrawStore((s) => s.setWheelIds)
-  const toggleWheelId = useDrawStore((s) => s.toggleWheelId)
-  const setWheelFilter = useDrawStore((s) => s.setWheelFilter)
-  const clearWheel = useDrawStore((s) => s.clearWheel)
+  const participants = useDrawStore((s) => s.participants);
+  const winners = useDrawStore((s) => s.winners);
+  const settings = useDrawStore((s) => s.settings);
+  const wheelIds = useDrawStore((s) => s.wheelIds);
+  const wheelFilter = useDrawStore((s) => s.wheelFilter);
+  const setWheelIds = useDrawStore((s) => s.setWheelIds);
+  const toggleWheelId = useDrawStore((s) => s.toggleWheelId);
+  const setWheelFilter = useDrawStore((s) => s.setWheelFilter);
+  const clearWheel = useDrawStore((s) => s.clearWheel);
 
-  const [query, setQuery] = useState('')
-  const [page, setPage] = useState(0)
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(0);
 
-  const pool = useMemo(() => selectPool({ participants, winners, settings }), [participants, winners, settings])
-  const departments = useMemo(() => uniqueValues(pool, 'department'), [pool])
-  const pins = useMemo(() => uniqueValues(pool, 'pinPoint'), [pool])
+  const pool = useMemo(() => selectPool({ participants, winners, settings }), [participants, winners, settings]);
+  const departments = useMemo(() => uniqueValues(pool, 'department'), [pool]);
+  const pins = useMemo(() => uniqueValues(pool, 'pinPoint'), [pool]);
 
-  const roster = useMemo(
-    () => selectWheelParticipants({ participants, winners, settings, wheelIds }),
-    [participants, winners, settings, wheelIds],
-  )
-  const rosterIds = useMemo(() => new Set(roster.map((p) => p.id)), [roster])
+  const roster = useMemo(() => selectWheelParticipants({ participants, winners, settings, wheelIds }), [participants, winners, settings, wheelIds]);
+  const rosterIds = useMemo(() => new Set(roster.map((p) => p.id)), [roster]);
 
-  const scoped = useMemo(
-    () => selectFilteredPool({ participants, winners, settings }, wheelFilter),
-    [participants, winners, settings, wheelFilter],
-  )
+  const scoped = useMemo(() => selectFilteredPool({ participants, winners, settings }, wheelFilter), [participants, winners, settings, wheelFilter]);
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return scoped
-    return scoped.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.employeeId.toLowerCase().includes(q) ||
-        (p.position?.toLowerCase().includes(q) ?? false),
-    )
-  }, [scoped, query])
+    const q = query.trim().toLowerCase();
+    if (!q) return scoped;
+    return scoped.filter((p) => p.name.toLowerCase().includes(q) || p.employeeId.toLowerCase().includes(q) || (p.position?.toLowerCase().includes(q) ?? false));
+  }, [scoped, query]);
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const pageRows = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
-  useEffect(() => setPage(0), [query, wheelFilter])
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageRows = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  useEffect(() => setPage(0), [query, wheelFilter]);
 
-  const full = roster.length >= MAX_WHEEL
-  const hasScope = Boolean(wheelFilter.department || wheelFilter.pinPoint)
+  const hasScope = Boolean(wheelFilter.department || wheelFilter.pinPoint);
 
   const randomFromFilter = () => {
-    if (filtered.length === 0) return
-    setWheelIds(pickMany(filtered, MAX_WHEEL).map((p) => p.id))
-  }
+    if (filtered.length === 0) return;
+    setWheelIds(pickMany(filtered, WHEEL_CAPACITY).map((p) => p.id));
+  };
+  /** Replace the roster with every participant in the current filter, in list order. */
   const addFilteredToWheel = () => {
-    if (filtered.length === 0) return
-    setWheelIds(filtered.slice(0, MAX_WHEEL).map((p) => p.id))
-  }
+    if (filtered.length === 0) return;
+    setWheelIds(filtered.map((p) => p.id));
+  };
+  const useReel = settings.stageMode === 'reel' || (settings.stageMode === 'auto' && roster.length > WHEEL_CAPACITY);
 
   return (
     <Modal
@@ -90,12 +73,11 @@ export function WheelModal({ open, onClose }: { open: boolean; onClose: () => vo
       title={
         <span className="flex items-center gap-3">
           Pilih Peserta di Roda
-          <Badge tone={full ? 'brand' : 'neutral'}>
-            {roster.length}/{MAX_WHEEL} dipilih
-          </Badge>
+          <Badge tone={roster.length > 0 ? 'brand' : 'neutral'}>{formatNumber(roster.length)} dipilih</Badge>
+          {roster.length > 0 && <Badge tone="neutral">{useReel ? 'Tampilan reel' : 'Tampilan roda'}</Badge>}
         </span>
       }
-      description={`Pemenang hanya diambil dari nama yang ada di roda. Maksimal ${MAX_WHEEL} nama. Filter departemen / pin point juga dipakai oleh tombol "Acak Peserta".`}
+      description={`Pemenang hanya diambil dari nama yang ada di roda. Tidak ada batas jumlah: sampai ${WHEEL_CAPACITY} nama ditampilkan sebagai roda, lebih dari itu otomatis memakai tampilan reel. Filter departemen / pin point juga dipakai oleh tombol "Acak Peserta".`}
       footer={
         <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
           <p className="text-ink-500 dark:text-ink-300">
@@ -142,8 +124,8 @@ export function WheelModal({ open, onClose }: { open: boolean; onClose: () => vo
             <Button
               variant="ghost"
               onClick={() => {
-                setQuery('')
-                setWheelFilter(EMPTY_WHEEL_FILTER)
+                setQuery('');
+                setWheelFilter(EMPTY_WHEEL_FILTER);
               }}
               disabled={!hasScope && !query}
               title="Reset filter"
@@ -154,10 +136,10 @@ export function WheelModal({ open, onClose }: { open: boolean; onClose: () => vo
 
           <div className="flex flex-wrap gap-2">
             <Button variant="primary" size="sm" onClick={randomFromFilter} disabled={filtered.length === 0}>
-              <Shuffle className="h-4 w-4" /> Acak {Math.min(MAX_WHEEL, filtered.length)} dari hasil filter
+              <Shuffle className="h-4 w-4" /> Acak {Math.min(WHEEL_CAPACITY, filtered.length)} dari hasil filter
             </Button>
-            <Button variant="outline" size="sm" onClick={addFilteredToWheel} disabled={filtered.length === 0}>
-              <ListChecks className="h-4 w-4" /> Tambahkan berurutan ke roda
+            <Button variant="outline" size="sm" onClick={addFilteredToWheel} disabled={filtered.length === 0} title="Ganti isi roda dengan seluruh hasil filter, urut dari atas">
+              <ListChecks className="h-4 w-4" /> Pilih semua ({formatNumber(filtered.length)}) berurutan
             </Button>
           </div>
 
@@ -182,28 +164,17 @@ export function WheelModal({ open, onClose }: { open: boolean; onClose: () => vo
                   </tr>
                 )}
                 {pageRows.map((p) => {
-                  const checked = rosterIds.has(p.id)
-                  const disabled = !checked && full
+                  const checked = rosterIds.has(p.id);
                   return (
-                    <tr
-                      key={p.id}
-                      onClick={() => !disabled && toggleWheelId(p.id)}
-                      className={cn(
-                        'cursor-pointer hover:bg-ink-50 dark:hover:bg-ink-800/50',
-                        checked && 'bg-brand-500/10',
-                        disabled && 'cursor-not-allowed opacity-50',
-                      )}
-                    >
-                      <td className="px-3 py-2">
-                        {checked ? <CheckSquare className="h-4 w-4 text-brand-500" /> : <Square className="h-4 w-4 text-ink-400" />}
-                      </td>
+                    <tr key={p.id} onClick={() => toggleWheelId(p.id)} className={cn('cursor-pointer hover:bg-ink-50 dark:hover:bg-ink-800/50', checked && 'bg-brand-500/10')}>
+                      <td className="px-3 py-2">{checked ? <CheckSquare className="h-4 w-4 text-brand-500" /> : <Square className="h-4 w-4 text-ink-400" />}</td>
                       <td className="px-3 py-2 font-mono text-xs">{p.employeeId}</td>
                       <td className="px-3 py-2 font-medium">{p.name}</td>
                       <td className="px-3 py-2">{p.department ?? '—'}</td>
                       <td className="px-3 py-2">{p.pinPoint ?? '—'}</td>
                       <td className="px-3 py-2">{p.position ?? '—'}</td>
                     </tr>
-                  )
+                  );
                 })}
               </tbody>
             </table>
@@ -221,15 +192,13 @@ export function WheelModal({ open, onClose }: { open: boolean; onClose: () => vo
           {roster.length === 0 ? (
             <p className="py-8 text-center text-xs text-ink-400">Belum ada nama. Pilih dari daftar di kiri atau gunakan Acak.</p>
           ) : (
-            <ol className="flex flex-col gap-1.5">
+            <ol className="flex max-h-[60vh] flex-col gap-1.5 overflow-auto pr-1">
               {roster.map((p, i) => (
                 <li key={p.id} className="flex items-center gap-2 rounded-lg bg-ink-50 px-2 py-1.5 text-sm dark:bg-ink-800/60">
                   <span className="w-5 shrink-0 text-right text-xs tabular-nums text-ink-400">{i + 1}</span>
                   <span className="min-w-0 flex-1 truncate">
                     <span className="font-medium">{p.name}</span>
-                    <span className="block truncate text-xs text-ink-500 dark:text-ink-400">
-                      {[p.employeeId, p.department].filter(Boolean).join(' · ')}
-                    </span>
+                    <span className="block truncate text-xs text-ink-500 dark:text-ink-400">{[p.employeeId, p.department].filter(Boolean).join(' · ')}</span>
                   </span>
                   <button type="button" onClick={() => toggleWheelId(p.id)} className="text-ink-400 hover:text-red-500" title="Keluarkan dari roda">
                     <X className="h-4 w-4" />
@@ -241,5 +210,5 @@ export function WheelModal({ open, onClose }: { open: boolean; onClose: () => vo
         </aside>
       </div>
     </Modal>
-  )
+  );
 }

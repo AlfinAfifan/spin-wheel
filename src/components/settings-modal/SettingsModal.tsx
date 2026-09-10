@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { ArrowDown, ArrowUp, Plus, Trash2, Trophy } from 'lucide-react'
-import { selectPrizeRemaining, useDrawStore } from '@/stores/draw.store'
+import { WHEEL_CAPACITY, selectPrizeRemaining, useDrawStore } from '@/stores/draw.store'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Toggle } from '@/components/ui/Toggle'
-import { Input, Label } from '@/components/ui/Field'
+import { Input, Label, Select } from '@/components/ui/Field'
+import type { StageMode } from '@/types/participant'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { cn } from '@/lib/utils'
 
@@ -74,6 +75,15 @@ export function SettingsModal({ open, onClose }: { open: boolean; onClose: () =>
               <span>Rekomendasi 6–10s</span>
               <span>15s</span>
             </div>
+          </div>
+          <div>
+            <Label htmlFor="stageMode">Tampilan undian</Label>
+            <Select id="stageMode" value={settings.stageMode} onChange={(e) => updateSettings({ stageMode: e.target.value as StageMode })}>
+              <option value="auto">Otomatis (roda ≤ {WHEEL_CAPACITY} nama, reel jika lebih)</option>
+              <option value="wheel">Selalu roda</option>
+              <option value="reel">Selalu reel (gulungan nama)</option>
+            </Select>
+            <p className="mt-1 text-xs text-ink-500 dark:text-ink-400">Reel cocok untuk ratusan nama sekaligus. Roda dengan nama sangat banyak tetap bisa, tapi label disembunyikan.</p>
           </div>
           <div className="divide-y divide-ink-100 dark:divide-ink-800">
             <Toggle

@@ -23,7 +23,7 @@ Hasil `npm run build` di folder `dist/` adalah file statis yang bisa dibuka lewa
 6. **Winner reveal** dengan confetti dan fanfare. Lanjut dengan `Space`/`Enter`, atau **Undo Winner** jika ada kesalahan.
 7. **History** (tekan `H`): daftar seluruh pemenang, undo per pemenang, export ke Excel.
 
-**Roda dan pemenang.** Roda menampilkan maksimal 16 nama, dan pemenang selalu diambil dari nama yang sedang tampil di roda. Daftar nama tidak berubah saat Spin ditekan. Setelah menang, nama tersebut keluar dari roda dan slotnya kosong sampai operator mengisi ulang. Tombol **Acak Peserta** mengisi roda dengan peserta acak dari pool (mengikuti filter departemen / pin point yang tersimpan). Tombol **Pilih Peserta** (tekan `W`) membuka modal untuk memilih nama secara manual: filter departemen dan pin point, cari nama, centang satu per satu, "Acak 16 dari hasil filter", atau "Tambahkan ke roda".
+**Roda, reel, dan pemenang.** Jumlah nama yang ikut diundi tidak dibatasi. Sampai 16 nama ditampilkan sebagai roda; lebih dari itu tampilan otomatis berganti ke *reel* (gulungan nama vertikal ala mesin slot) yang tetap ringan untuk ratusan nama. Mode tampilan bisa dikunci di Settings (Otomatis / Selalu roda / Selalu reel). Pemenang selalu diambil dari nama yang sedang ada di roda atau reel, dan daftar nama tidak berubah saat Spin ditekan. Setelah menang, nama tersebut keluar dari daftar. Tombol **Acak Peserta** mengisi roda dengan 16 peserta acak dari pool (mengikuti filter departemen / pin point yang tersimpan). Tombol **Pilih Peserta** (tekan `W`) membuka modal untuk memilih nama secara manual: filter departemen dan pin point, cari nama, centang satu per satu, "Acak 16 dari hasil filter", atau "Pilih semua berurutan" yang mengganti isi roda dengan seluruh hasil filter sesuai urutan daftar.
 
 **Lebih dari satu pemenang per spin.** Jika pengaturan "Jumlah pemenang per spin" lebih dari 1, roda berputar berurutan untuk setiap pemenang: putaran pertama penuh, putaran berikutnya lebih singkat. Setiap segmen pemenang diberi badge nomor dan ada indikator "Pemenang 2 dari 3" di roda, lalu semua pemenang ditampilkan bersama di winner reveal.
 
@@ -70,7 +70,7 @@ src/
 
 ## Catatan desain
 
-- Roda menggambar maksimal 16 segmen sesuai daftar peserta di roda. Pemenang dipilih dari daftar itu, lalu roda diarahkan ke segmen pemenang secara deterministik tanpa mengubah urutan nama.
+- Roda menggambar satu segmen per peserta di roda (label disembunyikan di atas 24 segmen, nama di bawah jarum ditampilkan sebagai chip). Reel hanya merender beberapa baris di sekitar posisi saat ini, sehingga jumlah peserta tidak memengaruhi performa. Pemenang dipilih dari daftar itu, lalu roda/reel diarahkan ke pemenang secara deterministik tanpa mengubah urutan nama.
 - Pemenang dipilih dengan `crypto.getRandomValues` dan rejection sampling (tanpa modulo bias).
 - Efek suara disintesis dengan Web Audio API sehingga tidak ada aset eksternal dan tetap berjalan offline.
 - Spin dikunci selama animasi: tombol, hub roda, dan shortcut tidak dapat memicu spin kedua.

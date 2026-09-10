@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cubicBezier } from 'motion'
 import type { Participant } from '@/types/participant'
-import { MAX_WHEEL, type PendingSpin } from '@/stores/draw.store'
+import type { PendingSpin } from '@/stores/draw.store'
 import { randomFloat, randomInt } from '@/lib/random'
 import { playSpinStart, playTick } from '@/lib/sound'
 import { cn, truncate } from '@/lib/utils'
 
-const MAX_SEGMENTS = MAX_WHEEL
+/** Above this many segments, labels are hidden and the name under the pointer is shown instead. */
+const LABEL_LIMIT = 24
+/** Minimum gap between tick sounds so huge rosters don't turn into noise. */
+const TICK_GAP_MS = 45
 const SIZE = 600
 const CX = SIZE / 2
 const CY = SIZE / 2
@@ -72,7 +75,7 @@ function buildSegments(roster: Participant[]): Segment[] {
   if (roster.length === 0) {
     return Array.from({ length: 8 }, () => ({ label: '', placeholder: true }))
   }
-  return roster.slice(0, MAX_SEGMENTS).map((p) => ({ label: p.name, sub: p.employeeId, participantId: p.id }))
+  return roster.map((p) => ({ label: p.name, sub: p.employeeId, participantId: p.id }))
 }
 
 export function SpinWheel({
@@ -90,6 +93,8 @@ export function SpinWheel({
   const [highlights, setHighlights] = useState<number[]>([])
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null)
   const [spinning, setSpinning] = useState(false)
+  /** Name currently under the pointer; only tracked when there are too many segments for labels */
+  const [pointerName, setPointerName] = useState<string | null>(null)
 
   const wheelRef = useRef<HTMLDivElement>(null)
   const pointerRef = useRef<HTMLDivElement>(null)
@@ -108,6 +113,7 @@ export function SpinWheel({
     if (spinning || frozen || pending) return
     setSegments(buildSegments(roster))
     setHighlights([])
+    setPointerName(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rosterKey, frozen])
 
@@ -140,8 +146,10 @@ export function SpinWheel({
     }
     const n = segs.length
     const total = targets.length
+    const showLabels = n <= LABEL_LIMIT
     setSegments(segs)
     setHighlights([])
+    setPointerName(null)
     setSpinning(true)
     setProgress(total > 1 ? { current: 1, total } : null)
 
@@ -167,6 +175,7 @@ export function SpinWheel({
       let lastIdx = -1
       let lastRot = from
       let lastTime = start
+      let lastTick = 0
 
       const frame = (now: number) => {
         if (cancelled) return
@@ -179,12 +188,14 @@ export function SpinWheel({
         const norm = ((rot % 360) + 360) % 360
         const idxUnderPointer = Math.floor(((360 - norm) % 360) / segDeg) % n
         if (idxUnderPointer !== lastIdx) {
-          if (lastIdx !== -1) {
+          if (lastIdx !== -1 && now - lastTick >= TICK_GAP_MS) {
             const dt = Math.max(1, now - lastTime)
             const velocity = Math.abs(rot - lastRot) / dt // deg per ms
             const strength = Math.min(1, velocity / 0.9)
             if (soundRef.current) playTick(0.35 + 0.65 * strength)
             nudgePointer(0.4 + 0.6 * strength)
+            lastTick = now
+            if (!showLabels) setPointerName(segs[idxUnderPointer]?.label ?? null)
           }
           lastIdx = idxUnderPointer
           lastRot = rot
@@ -196,6 +207,7 @@ export function SpinWheel({
         } else {
           rafRef.current = null
           applyRotation(to)
+          if (!showLabels) setPointerName(segs[targetIdx]?.label ?? null)
           done()
         }
       }
@@ -237,6 +249,8 @@ export function SpinWheel({
 
   const n = segments.length
   const segDeg = 360 / n
+  const showLabels = n <= LABEL_LIMIT
+  const strokeWidth = n <= LABEL_LIMIT ? 2 : n <= 80 ? 1 : 0.35
   const canClick = !disabled && !spinning && !pending && !frozen
 
   return (
@@ -295,8 +309,8 @@ export function SpinWheel({
             const color = seg.placeholder ? (i % 2 === 0 ? '#1f2a4a' : '#26325a') : PALETTE[i % PALETTE.length]
             const hitOrder = highlights.indexOf(i)
             const isHit = hitOrder !== -1
-            const baseFont = n <= 4 ? 26 : n <= 8 ? 22 : n <= 12 ? 18 : 15
-            const minFont = n <= 8 ? 15 : 12
+            const baseFont = n <= 4 ? 26 : n <= 8 ? 22 : n <= 12 ? 18 : n <= 16 ? 15 : 12
+            const minFont = n <= 8 ? 15 : n <= 16 ? 12 : 9
             const textR = R - 26
             const tp = polar(mid, textR)
             // Radial space available between the rim label start and the hub (leaves room for the winner badge)
@@ -323,11 +337,11 @@ export function SpinWheel({
                     d={segmentPath(start, end)}
                     fill={color}
                     stroke="#0b1020"
-                    strokeWidth={2}
+                    strokeWidth={strokeWidth}
                     className={cn('transition-opacity duration-300', highlights.length > 0 && !isHit && 'opacity-45')}
                   />
                 )}
-                {!seg.placeholder && (
+                {!seg.placeholder && showLabels && (
                   <text
                     x={tp.x}
                     y={tp.y}
@@ -391,6 +405,15 @@ export function SpinWheel({
           {spinning ? '•••' : 'SPIN'}
         </span>
       </button>
+
+      {/* Name under the pointer (large rosters without labels) */}
+      {!showLabels && (
+        <div className="pointer-events-none absolute left-1/2 top-[9%] z-20 w-[70%] -translate-x-1/2 text-center">
+          <div className="truncate rounded-full border border-white/20 bg-ink-950/85 px-4 py-1.5 font-display text-sm font-black uppercase tracking-wide text-white shadow-lg backdrop-blur md:text-base">
+            {pointerName ?? `${n} nama di roda`}
+          </div>
+        </div>
+      )}
 
       {/* Multi-winner progress */}
       {progress && (

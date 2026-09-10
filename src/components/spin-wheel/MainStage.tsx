@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import { Gift, ListChecks, PartyPopper, Play, Shuffle, Trophy, Users } from 'lucide-react';
 import { motion } from 'motion/react';
-import { MAX_WHEEL, selectCurrentPrize, selectPool, selectPrizeRemaining, selectSessionCompleted, selectWheelParticipants, useDrawStore } from '@/stores/draw.store';
+import { WHEEL_CAPACITY, selectCurrentPrize, selectPool, selectPrizeRemaining, selectSessionCompleted, selectWheelParticipants, useDrawStore } from '@/stores/draw.store';
 import { SpinWheel } from './SpinWheel';
+import { SpinReel } from './SpinReel';
 import { Button } from '@/components/ui/Button';
 import { Kbd } from '@/components/ui/Kbd';
 import { cn, formatNumber } from '@/lib/utils';
@@ -42,6 +43,7 @@ export function MainStage({ presentation }: MainStageProps) {
   const prizeExhausted = prize !== null && prizeRemaining !== null && prizeRemaining <= 0;
   const canSpin = !isSpinning && !revealSpinId && roster.length > 0 && !prizeExhausted;
   const wheelLocked = isSpinning || Boolean(revealSpinId);
+  const useReel = settings.stageMode === 'reel' || (settings.stageMode === 'auto' && roster.length > WHEEL_CAPACITY);
 
   const handleSpin = () => {
     if (!canSpin) return;
@@ -98,12 +100,27 @@ export function MainStage({ presentation }: MainStageProps) {
       </div>
 
       {/* Wheel */}
-      <div className={cn('relative w-full', presentation ? 'max-w-[max(300px,min(calc(100vh-330px),92vw))]' : 'max-w-[max(280px,min(calc(100vh-400px),86vw))] md:max-w-[max(280px,min(calc(100vh-400px),60vw))]')}>
-        <SpinWheel roster={roster} pending={pendingSpin} durationSec={settings.spinDurationSec} soundEnabled={settings.soundEnabled} disabled={!canSpin} frozen={Boolean(revealSpinId)} onSpinRequest={handleSpin} onFinish={finishSpin} />
+      <div
+        className={cn(
+          'relative w-full',
+          useReel
+            ? presentation
+              ? 'max-w-4xl'
+              : 'max-w-3xl'
+            : presentation
+              ? 'max-w-[max(300px,min(calc(100vh-330px),92vw))]'
+              : 'max-w-[max(280px,min(calc(100vh-400px),86vw))] md:max-w-[max(280px,min(calc(100vh-400px),60vw))]',
+        )}
+      >
+        {useReel ? (
+          <SpinReel roster={roster} pending={pendingSpin} durationSec={settings.spinDurationSec} soundEnabled={settings.soundEnabled} disabled={!canSpin} frozen={Boolean(revealSpinId)} onSpinRequest={handleSpin} onFinish={finishSpin} presentation={presentation} />
+        ) : (
+          <SpinWheel roster={roster} pending={pendingSpin} durationSec={settings.spinDurationSec} soundEnabled={settings.soundEnabled} disabled={!canSpin} frozen={Boolean(revealSpinId)} onSpinRequest={handleSpin} onFinish={finishSpin} />
+        )}
 
         {/* Overlays for empty / blocked states */}
         {(noParticipants || noEligible || completed || wheelEmpty) && !isSpinning && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center rounded-full bg-ink-950/70 p-6 backdrop-blur-[2px]">
+          <div className={cn('absolute inset-0 z-30 flex items-center justify-center bg-ink-950/70 p-6 backdrop-blur-[2px]', useReel ? 'rounded-3xl' : 'rounded-full')}>
             <div className="max-w-xs text-center text-white">
               {noParticipants && (
                 <>
@@ -164,7 +181,7 @@ export function MainStage({ presentation }: MainStageProps) {
       {participants.length > 0 && (
         <div className="flex flex-wrap items-center justify-center gap-2">
           <span className="text-sm text-ink-500 dark:text-ink-300">
-            <span className="font-bold text-ink-900 dark:text-white">{roster.length}</span>/{MAX_WHEEL} nama di roda
+            <span className="font-bold text-ink-900 dark:text-white">{formatNumber(roster.length)}</span> nama di {useReel ? 'reel' : 'roda'}
             {scopeLabel && <span className="text-ink-400"> · {scopeLabel}</span>}
             <span className="text-ink-400">
               {' '}

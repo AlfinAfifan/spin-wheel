@@ -46,7 +46,11 @@ export interface DrawSettings {
   theme: 'dark' | 'light'
   /** Free-text prize name used when no prize list is configured */
   fallbackPrizeName: string
+  /** Draw display: auto = wheel for small rosters, reel for large ones */
+  stageMode: StageMode
 }
+
+export type StageMode = 'auto' | 'wheel' | 'reel'
 
 export type ImportIssueType =
   | 'missing_id'
