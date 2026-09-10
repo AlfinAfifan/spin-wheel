@@ -84,6 +84,8 @@ export function SpinReel({
   onFinishRef.current = onFinish
 
   const rowH = presentation ? 96 : 72
+  const rowsRef = useRef(rows)
+  rowsRef.current = rows
 
   const rosterKey = useMemo(() => roster.map((p) => p.id).join(','), [roster])
 
@@ -109,15 +111,32 @@ export function SpinReel({
   // Keep the strip aligned if the row height changes (e.g. entering presentation mode)
   useEffect(() => applyPos(posRef.current), [applyPos])
 
-  // Sync rows with the roster (only while idle)
+  // Sync rows with the roster (only while idle). The reel keeps its place: it stays on the
+  // participant currently in the centre, or, if that one left the roster (e.g. just won),
+  // on the next participant that still exists, so consecutive spins continue from where the
+  // previous one stopped instead of jumping back to the first name.
   useEffect(() => {
     if (spinning || frozen || pending) return
-    setRows(buildRows(roster))
+    const next = buildRows(roster)
+    const prevRows = rowsRef.current
+    let idx = 0
+    if (prevRows.length > 0 && !prevRows[0].placeholder && !next[0].placeholder) {
+      const ids = new Map(next.map((r, i) => [r.participantId, i]))
+      const start = mod(baseRef.current, prevRows.length)
+      for (let k = 0; k < prevRows.length; k++) {
+        const found = ids.get(prevRows[mod(start + k, prevRows.length)].participantId)
+        if (found !== undefined) {
+          idx = found
+          break
+        }
+      }
+    }
+    setRows(next)
     setHits([])
-    // Reset position without flushSync (we're inside an effect); the strip offset follows via state
-    posRef.current = 0
-    baseRef.current = 0
-    setBase(0)
+    // Position without flushSync (we're inside an effect); the strip offset follows via state
+    posRef.current = idx
+    baseRef.current = idx
+    setBase(idx)
     if (stripRef.current) stripRef.current.style.transform = `translate3d(0, ${-OVERSCAN * rowH}px, 0)`
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rosterKey, frozen])
