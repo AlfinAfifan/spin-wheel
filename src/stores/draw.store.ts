@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { DrawSettings, Participant, ParticipantDraft, Prize, Winner } from '@/types/participant';
-import { pickMany } from '@/lib/random';
+import { pickMany, shuffle } from '@/lib/random';
 import { sessionStorageAdapter, STORAGE_KEY } from '@/lib/storage';
 import { uid } from '@/lib/utils';
 
@@ -10,7 +10,6 @@ export type ModalName = 'import' | 'participants' | 'history' | 'settings' | 'wh
 /**
  * Number of names the circular wheel can display comfortably. The roster itself has no limit:
  * in "auto" stage mode, rosters larger than this are shown with the vertical reel instead.
- * Also used as the sample size for the "Acak" (random fill) actions.
  */
 export const WHEEL_CAPACITY = 16;
 
@@ -185,7 +184,7 @@ export const useDrawStore = create<DrawState>()(
         if (s.isSpinning) return;
         const scope = selectFilteredPool(s, s.wheelFilter);
         const source = scope.length > 0 ? scope : selectPool(s);
-        set({ wheelIds: pickMany(source, WHEEL_CAPACITY).map((p) => p.id), ...touch() });
+        set({ wheelIds: shuffle(source).map((p) => p.id), ...touch() });
       },
       clearWheel: () => set({ wheelIds: [], ...touch() }),
 

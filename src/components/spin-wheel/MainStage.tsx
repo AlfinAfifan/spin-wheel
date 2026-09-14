@@ -188,8 +188,8 @@ export function MainStage({ presentation }: MainStageProps) {
               · {formatNumber(pool.length)} eligible dari {formatNumber(participants.length)}
             </span>
           </span>
-          <Button variant="outline" size="sm" onClick={shuffleWheel} disabled={wheelLocked || pool.length === 0} title="Isi roda dengan peserta acak">
-            <Shuffle className="h-4 w-4" /> Acak 16 Peserta
+          <Button variant="outline" size="sm" onClick={shuffleWheel} disabled={wheelLocked || pool.length === 0} title="Isi roda dengan seluruh peserta secara acak">
+            <Shuffle className="h-4 w-4" /> Acak Semua Peserta
           </Button>
           <Button variant="outline" size="sm" onClick={() => openModal('wheel')} disabled={wheelLocked} title="Pilih peserta yang masuk roda (W)">
             <ListChecks className="h-4 w-4" /> Pilih Peserta
