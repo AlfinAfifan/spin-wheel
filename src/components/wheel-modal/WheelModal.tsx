@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { CheckSquare, ListChecks, Search, Shuffle, Square, Trash2, X } from 'lucide-react';
 import { EMPTY_WHEEL_FILTER, WHEEL_CAPACITY, selectFilteredPool, selectPool, selectWheelParticipants, useDrawStore } from '@/stores/draw.store';
 import type { Participant } from '@/types/participant';
-import { pickMany } from '@/lib/random';
+import { shuffle } from '@/lib/random';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
@@ -56,7 +56,7 @@ export function WheelModal({ open, onClose }: { open: boolean; onClose: () => vo
 
   const randomFromFilter = () => {
     if (filtered.length === 0) return;
-    setWheelIds(pickMany(filtered, WHEEL_CAPACITY).map((p) => p.id));
+    setWheelIds(shuffle(filtered).map((p) => p.id));
   };
   /** Replace the roster with every participant in the current filter, in list order. */
   const addFilteredToWheel = () => {
@@ -134,12 +134,12 @@ export function WheelModal({ open, onClose }: { open: boolean; onClose: () => vo
             </Button>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
             <Button variant="primary" size="sm" onClick={randomFromFilter} disabled={filtered.length === 0}>
-              <Shuffle className="h-4 w-4" /> Acak {Math.min(WHEEL_CAPACITY, filtered.length)} dari hasil filter
+              <Shuffle className="h-4 w-4" /> Isi roda secara acak dari hasil filter
             </Button>
             <Button variant="outline" size="sm" onClick={addFilteredToWheel} disabled={filtered.length === 0} title="Ganti isi roda dengan seluruh hasil filter, urut dari atas">
-              <ListChecks className="h-4 w-4" /> Pilih semua ({formatNumber(filtered.length)}) berurutan
+              <ListChecks className="h-4 w-4" /> Isi roda secara urut dari hasil filter
             </Button>
           </div>
 
