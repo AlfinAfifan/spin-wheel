@@ -138,7 +138,7 @@ export function WinnerOverlay() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.25 }}
-                  className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3"
+                  className="flex w-full flex-wrap justify-center gap-3"
                 >
                   {spinWinners.map((w, i) => (
                     <motion.div
@@ -146,7 +146,7 @@ export function WinnerOverlay() {
                       initial={{ opacity: 0, y: 16, scale: 0.9 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       transition={{ delay: 0.3 + i * 0.12, type: 'spring', stiffness: 260, damping: 20 }}
-                      className="rounded-2xl border border-yellow-300/40 bg-white/10 px-4 py-5 backdrop-blur"
+                      className="w-full rounded-2xl border border-yellow-300/40 bg-white/10 px-4 py-5 backdrop-blur sm:w-[calc(50%-0.375rem)] lg:w-[calc(33.333%-0.5rem)]"
                     >
                       <div className="text-shine-gold break-words font-display text-[clamp(1.5rem,3.2vw,2.5rem)] font-black leading-tight">
                         {w.name}

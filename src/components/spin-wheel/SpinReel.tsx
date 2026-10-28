@@ -335,6 +335,14 @@ export function SpinReel({
               style={{ height: rowH }}
             />
 
+            {/* Idle cover: hide the participant list until the reel starts rolling */}
+            {!spinning && !pending && hits.length === 0 && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-[#0b1020] p-6 text-center">
+                <img src="/sastro.png" alt="PT. Sastro Utama Media Grup" className="h-3/5 w-auto object-contain drop-shadow-[0_0_30px_rgba(66,103,178,0.5)]" />
+                <span className={cn('font-display font-black uppercase tracking-wide text-white', presentation ? 'text-3xl md:text-4xl' : 'text-xl md:text-3xl')}>PT. Sastro Utama Media Grup</span>
+              </div>
+            )}
+
             {/* Side pointers */}
             <div className="pointer-events-none absolute left-2 top-1/2 flex -translate-y-1/2 items-center">
               <div ref={leftPtrRef} className="flex">
